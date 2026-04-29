@@ -6,9 +6,11 @@ const authRoutes = require('./routes/auth');
 const fileRoutes = require('./routes/files');
 
 const app = express();
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://project-7bkdo.vercel.app'; // your Vercel URL
 
-// CORS middleware
+// আপনার Vercel URL (এনভায়রনমেন্ট ভেরিয়েবল থেকে নেবে)
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://project-7bkdo.vercel.app';
+
+// CORS middleware (Vercel serverless functions এর জন্য)
 app.use((req, res, next) => {
     if (req.method === 'OPTIONS') {
         res.header('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
@@ -27,13 +29,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'fallback-secret',
+    secret: process.env.SESSION_SECRET || 'fallback-secret-change-this',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: true,      // Vercel runs on HTTPS
+        secure: true,      // Vercel HTTPS uses secure cookies
         httpOnly: true,
-        sameSite: 'none',  // allow cross-origin cookies
+        sameSite: 'none',
         maxAge: 24 * 60 * 60 * 1000
     }
 }));
