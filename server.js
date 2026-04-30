@@ -19,6 +19,9 @@ app.use((req, res, next) => {
     next();
 });
 
+// Health check endpoint
+app.get('/ping', (req, res) => res.send('pong'));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -35,7 +38,6 @@ app.use(session({
     }
 }));
 
-app.get('/ping', (req, res) => res.send('pong'));
 app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
