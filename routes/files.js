@@ -1,24 +1,22 @@
 const express = require('express');
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
+
 const router = express.Router();
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Use memory storage (no disk writing)
-const upload = multer({ 
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 100 * 1024 * 1024 }
-});
+// Memory storage for multer (no disk writing)
+const upload = multer({ storage: multer.memoryStorage() });
 
 function requireAuth(req, res, next) {
     if (!req.session.userId) return res.status(401).json({ error: 'Authentication required' });
     next();
 }
 
-// Upload file to Supabase Storage bucket 'userfiles'
+// ---------- UPLOAD ----------
 router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
@@ -28,7 +26,6 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
     const safeName = `${timestamp}-${originalName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     const filePath = `${userId}/${safeName}`;
 
-    // Upload to 'userfiles' bucket (must be created in Supabase as Public)
     const { error: uploadError } = await supabase.storage
         .from('userfiles')
         .upload(filePath, req.file.buffer, {
@@ -41,10 +38,8 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
         return res.status(500).json({ error: 'File upload to Supabase failed: ' + uploadError.message });
     }
 
-    // Get public URL
     const { data: urlData } = supabase.storage.from('userfiles').getPublicUrl(filePath);
 
-    // Insert file metadata into 'files' table
     const { data: inserted, error: dbError } = await supabase
         .from('files')
         .insert([{
@@ -73,7 +68,7 @@ router.post('/upload', requireAuth, upload.single('file'), async (req, res) => {
     });
 });
 
-// List active (not deleted) files
+// ---------- LIST ACTIVE FILES ----------
 router.get('/list', requireAuth, async (req, res) => {
     const { data, error } = await supabase
         .from('files')
@@ -92,7 +87,7 @@ router.get('/list', requireAuth, async (req, res) => {
     })));
 });
 
-// Trash (deleted files)
+// ---------- TRASH LIST ----------
 router.get('/trash', requireAuth, async (req, res) => {
     const { data, error } = await supabase
         .from('files')
@@ -111,7 +106,7 @@ router.get('/trash', requireAuth, async (req, res) => {
     })));
 });
 
-// Soft delete (move to trash)
+// ---------- MOVE TO TRASH (soft delete) ----------
 router.delete('/delete/:id', requireAuth, async (req, res) => {
     const { error } = await supabase
         .from('files')
@@ -123,7 +118,7 @@ router.delete('/delete/:id', requireAuth, async (req, res) => {
     res.json({ success: true, message: 'Moved to trash' });
 });
 
-// Restore from trash
+// ---------- RESTORE FROM TRASH ----------
 router.post('/restore/:id', requireAuth, async (req, res) => {
     const { error } = await supabase
         .from('files')
@@ -135,9 +130,8 @@ router.post('/restore/:id', requireAuth, async (req, res) => {
     res.json({ success: true, message: 'Restored successfully' });
 });
 
-// Permanently delete (remove from storage and DB)
+// ---------- PERMANENT DELETE ----------
 router.delete('/permanent/:id', requireAuth, async (req, res) => {
-    // First get the file info
     const { data: file, error: fetchError } = await supabase
         .from('files')
         .select('file_path')
@@ -148,20 +142,16 @@ router.delete('/permanent/:id', requireAuth, async (req, res) => {
 
     if (fetchError || !file) return res.status(404).json({ error: 'File not found in trash' });
 
-    // Extract storage path from public URL
     const urlParts = file.file_path.split('/');
     const storagePath = urlParts.slice(urlParts.indexOf('userfiles') + 1).join('/');
 
-    // Delete from storage
     await supabase.storage.from('userfiles').remove([storagePath]);
-
-    // Delete database record
     await supabase.from('files').delete().eq('id', req.params.id);
 
     res.json({ success: true, message: 'Permanently deleted' });
 });
 
-// Preview (inline file content)
+// ---------- PREVIEW (inline display) ----------
 router.get('/preview/:id', requireAuth, async (req, res) => {
     const { data: file, error } = await supabase
         .from('files')
@@ -175,7 +165,10 @@ router.get('/preview/:id', requireAuth, async (req, res) => {
 
     const urlParts = file.file_path.split('/');
     const storagePath = urlParts.slice(urlParts.indexOf('userfiles') + 1).join('/');
-    const { data, error: downloadError } = await supabase.storage.from('userfiles').download(storagePath);
+
+    const { data, error: downloadError } = await supabase.storage
+        .from('userfiles')
+        .download(storagePath);
 
     if (downloadError) return res.status(500).json({ error: 'Failed to retrieve file' });
 
@@ -184,18 +177,39 @@ router.get('/preview/:id', requireAuth, async (req, res) => {
     res.send(Buffer.from(await data.arrayBuffer()));
 });
 
-// Download (redirect to public URL)
+// ---------- DOWNLOAD (force download, NOT inline) ----------
 router.get('/download/:id', requireAuth, async (req, res) => {
+    const fileId = req.params.id;
+
     const { data: file, error } = await supabase
         .from('files')
-        .select('file_path, original_name')
-        .eq('id', req.params.id)
+        .select('file_path, original_name, mime_type')
+        .eq('id', fileId)
         .eq('user_id', req.session.userId)
         .eq('is_deleted', 0)
         .single();
 
-    if (error || !file) return res.status(404).json({ error: 'File not found' });
-    res.redirect(file.file_path);
+    if (error || !file) {
+        return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Extract storage path (same as preview)
+    const urlParts = file.file_path.split('/');
+    const storagePath = urlParts.slice(urlParts.indexOf('userfiles') + 1).join('/');
+
+    const { data, error: downloadError } = await supabase.storage
+        .from('userfiles')
+        .download(storagePath);
+
+    if (downloadError) {
+        console.error('Download error:', downloadError);
+        return res.status(500).json({ error: 'Failed to download file' });
+    }
+
+    res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.original_name)}"`);
+    res.setHeader('Content-Length', data.size);
+    res.send(Buffer.from(await data.arrayBuffer()));
 });
 
 module.exports = router;
