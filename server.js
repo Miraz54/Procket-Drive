@@ -7,11 +7,11 @@ const fileRoutes = require('./routes/files');
 
 const app = express();
 
-// The fix: Trust the first proxy
+// Trust proxy (needed for Render)
 app.set('trust proxy', 1);
 
-// Allowed origin
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://your-app.onrender.com';
+// Allowed origin (your Render URL, change if needed)
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://procket-drive.onrender.com';
 
 // CORS
 app.use((req, res, next) => {
@@ -31,15 +31,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// Updated session configuration
 app.use(session({
     secret: process.env.SESSION_SECRET || 'fallback-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: true,       // Must be true on Render's HTTPS
+        secure: true,       // Render uses HTTPS
         httpOnly: true,
-        sameSite: 'none',   // Required for cross-origin requests
+        sameSite: 'none',
         maxAge: 24 * 60 * 60 * 1000
     }
 }));
