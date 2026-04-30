@@ -6,14 +6,10 @@ const authRoutes = require('./routes/auth');
 const fileRoutes = require('./routes/files');
 
 const app = express();
-
-// Trust proxy (needed for Render)
 app.set('trust proxy', 1);
 
-// Allowed origin (your Render URL, change if needed)
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://procket-drive.onrender.com';
 
-// CORS
 app.use((req, res, next) => {
     if (req.method === 'OPTIONS') {
         res.header('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
@@ -36,7 +32,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: true,       // Render uses HTTPS
+        secure: true,
         httpOnly: true,
         sameSite: 'none',
         maxAge: 24 * 60 * 60 * 1000
