@@ -1,8 +1,6 @@
-// ======================== GLOBALS ========================
 let currentView = 'grid';
 let resetToken = null;
 
-// ======================== AUTH & PAGE LOAD ========================
 async function checkAuth() {
     try {
         const res = await fetch('/api/auth/me');
@@ -14,10 +12,9 @@ async function checkAuth() {
             loadFiles();
             loadUserProfile();
         }
-    } catch(e) { console.error('Auth check failed', e); }
+    } catch(e) { console.error(e); }
 }
 
-// ======================== PASSWORD TOGGLE ========================
 window.togglePassword = function(fieldId, icon) {
     const f = document.getElementById(fieldId);
     if (f.type === 'password') {
@@ -31,7 +28,6 @@ window.togglePassword = function(fieldId, icon) {
     }
 };
 
-// ======================== TAB SWITCHING ========================
 function showAuthTab(tab) {
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
@@ -50,7 +46,6 @@ function showAuthTab(tab) {
     document.getElementById('authMessage').innerHTML = '';
 }
 
-// ======================== PASSWORD MATCH (SIGNUP) ========================
 document.addEventListener('DOMContentLoaded', () => {
     const pwd = document.getElementById('signupPassword');
     const confirm = document.getElementById('signupConfirmPassword');
@@ -72,7 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ======================== LOGIN / LOGOUT / SIGNUP ========================
 async function login(e) {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value;
@@ -108,7 +102,7 @@ async function signup(e) {
         return;
     }
     if (password.length < 6) {
-        showMessage('authMessage', 'Password must be at least 6 characters', 'error');
+        showMessage('authMessage', 'Password at least 6 characters', 'error');
         return;
     }
     try {
@@ -140,7 +134,6 @@ async function logout() {
     document.getElementById('loginPassword').value = '';
 }
 
-// ======================== PROFILE (minimal for now) ========================
 async function loadUserProfile() {
     try {
         const res = await fetch('/api/auth/profile');
@@ -148,10 +141,14 @@ async function loadUserProfile() {
             const user = await res.json();
             document.getElementById('userName').innerText = user.name || user.email.split('@')[0];
             const avatar = document.getElementById('profileAvatar');
-            if (avatar) avatar.src = user.profile_picture || '/uploads/default-avatar.png';
+            if (user.profile_picture && user.profile_picture !== '/uploads/default-avatar.png') {
+                avatar.src = user.profile_picture + '?t=' + Date.now();
+            } else {
+                avatar.src = '/uploads/default-avatar.png';
+            }
             window.currentProfile = user;
         }
-    } catch(e) { console.error('Profile load failed', e); }
+    } catch(e) { console.error(e); }
 }
 
 function openProfileModal() {
@@ -168,7 +165,6 @@ function openProfileModal() {
     modal.style.display = 'flex';
 }
 function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
-
 async function updateProfileName() {
     const newName = document.getElementById('profileNameInput').value.trim();
     if (!newName) { showProfileMessage('Name required', 'error'); return; }
@@ -187,8 +183,8 @@ async function updateProfileName() {
 async function updateProfilePassword() {
     const oldPass = document.getElementById('profileOldPassword').value;
     const newPass = document.getElementById('profileNewPassword').value;
-    if (!oldPass || !newPass) { showProfileMessage('Fill both fields', 'error'); return; }
-    if (newPass.length < 6) { showProfileMessage('Password too short', 'error'); return; }
+    if (!oldPass || !newPass) { showProfileMessage('Fill both', 'error'); return; }
+    if (newPass.length < 6) { showProfileMessage('Too short', 'error'); return; }
     const res = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -197,7 +193,7 @@ async function updateProfilePassword() {
     if (res.ok) {
         showProfileMessage('Password changed!', 'success');
         setTimeout(() => closeProfileModal(), 1000);
-    } else showProfileMessage('Wrong password', 'error');
+    } else showProfileMessage('Wrong current password', 'error');
 }
 async function uploadProfilePicture(input) {
     const file = input.files[0];
@@ -220,7 +216,6 @@ function showProfileMessage(msg, type) {
     setTimeout(() => { if (el.innerHTML === msg) el.innerHTML = ''; }, 3000);
 }
 
-// ======================== CHANGE PASSWORD (standalone) ========================
 function changePasswordDialog() {
     document.getElementById('changePasswordModal').style.display = 'flex';
     document.getElementById('currentPassword').value = '';
@@ -245,68 +240,6 @@ async function submitChangePassword() {
     } else showMessage('changePasswordMessage', data.error, 'error');
 }
 
-// ======================== FORGOT & RESET PASSWORD ========================
-function showForgotPassword() {
-    document.getElementById('forgotModal').style.display = 'flex';
-    document.getElementById('forgotEmail').value = '';
-    document.getElementById('forgotMessage').innerHTML = '';
-}
-function closeForgotModal() { document.getElementById('forgotModal').style.display = 'none'; }
-async function sendResetLink() {
-    const email = document.getElementById('forgotEmail').value;
-    const msgDiv = document.getElementById('forgotMessage');
-    if (!email) { msgDiv.innerHTML = '<span class="error">Enter email</span>'; return; }
-    msgDiv.innerHTML = 'Sending...';
-    try {
-        const res = await fetch('/api/auth/forgot-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            msgDiv.innerHTML = '<span class="success">' + data.message + '</span>';
-            setTimeout(closeForgotModal, 3000);
-        } else msgDiv.innerHTML = '<span class="error">' + data.error + '</span>';
-    } catch(err) { msgDiv.innerHTML = '<span class="error">Network error</span>'; }
-}
-function showResetPasswordModal() {
-    document.getElementById('resetModal').style.display = 'flex';
-    document.getElementById('resetNewPassword').value = '';
-    document.getElementById('resetConfirmPassword').value = '';
-    document.getElementById('resetMessage').innerHTML = '';
-}
-function closeResetModal() {
-    document.getElementById('resetModal').style.display = 'none';
-    resetToken = null;
-    window.history.replaceState({}, document.title, window.location.pathname);
-}
-async function submitResetPassword() {
-    const newPass = document.getElementById('resetNewPassword').value;
-    const confirmPass = document.getElementById('resetConfirmPassword').value;
-    const msgDiv = document.getElementById('resetMessage');
-    if (!newPass || !confirmPass) { msgDiv.innerHTML = '<span class="error">Fill both</span>'; return; }
-    if (newPass.length < 6) { msgDiv.innerHTML = '<span class="error">Min 6 chars</span>'; return; }
-    if (newPass !== confirmPass) { msgDiv.innerHTML = '<span class="error">Passwords do not match</span>'; return; }
-    if (!resetToken) { msgDiv.innerHTML = '<span class="error">Invalid token</span>'; return; }
-    const res = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: resetToken, newPassword: newPass })
-    });
-    const data = await res.json();
-    if (res.ok) {
-        msgDiv.innerHTML = '<span class="success">Password reset! Redirecting...</span>';
-        setTimeout(() => { closeResetModal(); window.location.href = '/'; }, 2000);
-    } else msgDiv.innerHTML = '<span class="error">' + data.error + '</span>';
-}
-function checkResetToken() {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('reset');
-    if (token) { resetToken = token; showResetPasswordModal(); window.history.replaceState({}, document.title, window.location.pathname); }
-}
-
-// ======================== FILE UPLOAD & MANAGEMENT ========================
 async function uploadFile(input) {
     const file = input.files[0];
     if (!file) return;
@@ -357,8 +290,13 @@ function formatFileSize(bytes) {
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
 }
-function formatDateTime(isoString) { if (!isoString) return 'Unknown'; return new Date(isoString).toLocaleString(); }
-function escapeHtml(str) { return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':m==='>'?'&gt;':m); }
+function formatDateTime(isoString) {
+    if (!isoString) return 'Unknown';
+    return new Date(isoString).toLocaleString();
+}
+function escapeHtml(str) {
+    return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':m==='>'?'&gt;':m);
+}
 function getFileIcon(mime, id, name) {
     if (mime && mime.startsWith('image/')) return `<img src="/api/files/preview/${id}" style="width:48px; height:48px; object-fit:cover; border-radius:8px;" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fas fa-file-image\\' style=\\'font-size:48px; color:#10b981\\'></i>';">`;
     if (mime.includes('pdf')) return '<i class="fas fa-file-pdf" style="color:#ef4444; font-size:48px;"></i>';
@@ -371,7 +309,10 @@ function getFileIcon(mime, id, name) {
 }
 function displayFiles(files) {
     const container = document.getElementById('fileList');
-    if (files.length === 0) { container.innerHTML = '<div style="text-align:center; padding:50px;"><i class="fas fa-cloud-upload-alt" style="font-size:48px;"></i><p>No files yet.</p></div>'; return; }
+    if (files.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:50px;"><i class="fas fa-cloud-upload-alt" style="font-size:48px;"></i><p>No files yet.</p></div>';
+        return;
+    }
     if (currentView === 'grid') {
         container.innerHTML = files.map(f => `
             <div class="file-card">
@@ -484,7 +425,6 @@ function showMessage(id, msg, type) {
     setTimeout(() => { if (el.innerHTML === msg) el.innerHTML = ''; }, 5000);
 }
 
-// ======================== THEMES & ANIMATIONS ========================
 const themes = [
     { bg: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)', accent: '#00d4ff', btnStart: '#00b4db', btnEnd: '#0083b0' },
     { bg: 'linear-gradient(135deg, #2b0b1a 0%, #8a2b3c 50%, #ff6b4a 100%)', accent: '#ff9a56', btnStart: '#ff8c42', btnEnd: '#d65c2c' },
@@ -525,6 +465,4 @@ function createParticle() {
 }
 setInterval(() => { if (Math.random()>0.7) createCloud(); if (Math.random()>0.5) createParticle(); }, 2000);
 
-// ======================== INIT ========================
-checkResetToken();
 checkAuth();
