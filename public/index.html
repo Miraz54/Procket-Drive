@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pocket Drive - Cloud Storage</title>
+    <title>Pocket Drive - Secure Cloud Storage</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -14,24 +14,47 @@
         <!-- Auth Section -->
         <div id="authSection" class="auth-section">
             <div class="auth-card glass-card">
-                <div class="logo"><i class="fas fa-cloud-upload-alt"></i><h1>Pocket Drive</h1></div>
+                <div class="logo">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h1>Pocket Drive</h1>
+                </div>
                 <div class="auth-tabs">
                     <button class="tab-btn active" onclick="showAuthTab('login')">Login</button>
                     <button class="tab-btn" onclick="showAuthTab('signup')">Sign Up</button>
                 </div>
+                <!-- Login Form -->
                 <div id="loginForm" class="auth-form active">
                     <form onsubmit="login(event)">
-                        <div class="input-group"><i class="fas fa-envelope"></i><input type="email" id="loginEmail" placeholder="Email" required></div>
-                        <div class="input-group"><i class="fas fa-lock"></i><input type="password" id="loginPassword" placeholder="Password" required><i class="fas fa-eye-slash password-toggle" onclick="window.togglePassword('loginPassword', this)"></i></div>
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="loginEmail" placeholder="Email address" required>
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="loginPassword" placeholder="Password" required>
+                            <i class="fas fa-eye-slash password-toggle" onclick="window.togglePassword('loginPassword', this)"></i>
+                        </div>
                         <button type="submit" class="btn-primary">Login</button>
                         <a href="#" onclick="showForgotPassword()" class="forgot-link">Forgot Password?</a>
                     </form>
                 </div>
+                <!-- Signup Form -->
                 <div id="signupForm" class="auth-form">
                     <form onsubmit="signup(event)">
-                        <div class="input-group"><i class="fas fa-envelope"></i><input type="email" id="signupEmail" placeholder="Email" required></div>
-                        <div class="input-group"><i class="fas fa-lock"></i><input type="password" id="signupPassword" placeholder="Password (min 6)" required><i class="fas fa-eye-slash password-toggle" onclick="window.togglePassword('signupPassword', this)"></i></div>
-                        <div class="input-group"><i class="fas fa-check-circle"></i><input type="password" id="signupConfirmPassword" placeholder="Confirm password" required><i class="fas fa-eye-slash password-toggle" onclick="window.togglePassword('signupConfirmPassword', this)"></i></div>
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="signupEmail" placeholder="Email address" required>
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="signupPassword" placeholder="Password (min 6)" required>
+                            <i class="fas fa-eye-slash password-toggle" onclick="window.togglePassword('signupPassword', this)"></i>
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-check-circle"></i>
+                            <input type="password" id="signupConfirmPassword" placeholder="Confirm password" required>
+                            <i class="fas fa-eye-slash password-toggle" onclick="window.togglePassword('signupConfirmPassword', this)"></i>
+                        </div>
                         <div id="passwordMatchMsg" class="password-match-msg"></div>
                         <button type="submit" class="btn-primary">Create Account</button>
                     </form>
@@ -40,32 +63,129 @@
             </div>
         </div>
 
-        <!-- Modals -->
-        <div id="forgotModal" class="modal"><div class="modal-content glass-card"><span class="close" onclick="closeForgotModal()">&times;</span><h3>Reset Password</h3><p>Enter your email</p><input type="email" id="forgotEmail" class="modal-input"><button onclick="sendResetLink()" class="btn-primary">Send</button><div id="forgotMessage" class="message"></div></div></div>
-        <div id="resetModal" class="modal"><div class="modal-content glass-card"><span class="close" onclick="closeResetModal()">&times;</span><h3>New Password</h3><input type="password" id="resetNewPassword" placeholder="New password" class="modal-input"><input type="password" id="resetConfirmPassword" placeholder="Confirm" class="modal-input"><button onclick="submitResetPassword()" class="btn-primary">Reset</button><div id="resetMessage" class="message"></div></div></div>
-        <div id="changePasswordModal" class="modal"><div class="modal-content glass-card"><span class="close" onclick="closeChangePasswordModal()">&times;</span><h3>Change Password</h3><input type="password" id="currentPassword" placeholder="Current password" class="modal-input"><input type="password" id="newPassword" placeholder="New password (min 6)" class="modal-input"><button onclick="submitChangePassword()" class="btn-primary">Update</button><div id="changePasswordMessage" class="message"></div></div></div>
-        <div id="trashModal" class="modal"><div class="modal-content glass-card trash-modal"><span class="close" onclick="closeTrashModal()">&times;</span><h3><i class="fas fa-trash-alt"></i> Trash</h3><div id="trashList" class="trash-container"></div><div style="margin-top:15px; text-align:center;"><button onclick="closeTrashModal()" class="btn-primary btn-small">Close</button></div></div></div>
-        <div id="previewModal" class="modal"><div class="modal-content glass-card preview-modal"><span class="close" onclick="closePreviewModal()">&times;</span><h3 id="previewFileName">Preview</h3><div id="previewContent" class="preview-content"></div></div></div>
+        <!-- Forgot Password Modal -->
+        <div id="forgotModal" class="modal">
+            <div class="modal-content glass-card">
+                <span class="close" onclick="closeForgotModal()">&times;</span>
+                <h3>Reset Password</h3>
+                <p>Enter your email address to receive a reset link.</p>
+                <input type="email" id="forgotEmail" placeholder="Your email" class="modal-input">
+                <button onclick="sendResetLink()" class="btn-primary">Send Reset Link</button>
+                <div id="forgotMessage" class="message"></div>
+            </div>
+        </div>
 
-        <!-- Dashboard -->
+        <!-- Reset Password Modal (after clicking email link) -->
+        <div id="resetModal" class="modal">
+            <div class="modal-content glass-card">
+                <span class="close" onclick="closeResetModal()">&times;</span>
+                <h3>Set New Password</h3>
+                <input type="password" id="resetNewPassword" placeholder="New password (min 6)" class="modal-input">
+                <input type="password" id="resetConfirmPassword" placeholder="Confirm new password" class="modal-input">
+                <button onclick="submitResetPassword()" class="btn-primary">Reset Password</button>
+                <div id="resetMessage" class="message"></div>
+            </div>
+        </div>
+
+        <!-- Change Password Modal (standalone) -->
+        <div id="changePasswordModal" class="modal">
+            <div class="modal-content glass-card">
+                <span class="close" onclick="closeChangePasswordModal()">&times;</span>
+                <h3>Change Password</h3>
+                <input type="password" id="currentPassword" placeholder="Current password" class="modal-input">
+                <input type="password" id="newPasswordModal" placeholder="New password (min 6)" class="modal-input">
+                <button onclick="submitChangePassword()" class="btn-primary">Update Password</button>
+                <div id="changePasswordMessage" class="message"></div>
+            </div>
+        </div>
+
+        <!-- Profile Modal -->
+        <div id="profileModal" class="modal">
+            <div class="modal-content glass-card profile-modal">
+                <span class="close" onclick="closeProfileModal()">&times;</span>
+                <h3>Edit Profile</h3>
+                <div class="profile-pic-section">
+                    <img id="modalProfilePic" src="/uploads/default-avatar.png" alt="Profile" class="profile-avatar-large">
+                    <button onclick="document.getElementById('profilePicInput').click()" class="btn-secondary">Change Picture</button>
+                    <input type="file" id="profilePicInput" accept="image/*" style="display: none" onchange="uploadProfilePicture(this)">
+                </div>
+                <div class="profile-field">
+                    <label>Name</label>
+                    <input type="text" id="profileNameInput" placeholder="Your name">
+                    <button onclick="updateProfileName()" class="btn-primary btn-small">Save Name</button>
+                </div>
+                <div class="profile-field">
+                    <label>Change Password</label>
+                    <input type="password" id="profileOldPassword" placeholder="Current password">
+                    <input type="password" id="profileNewPassword" placeholder="New password (min 6)">
+                    <button onclick="updateProfilePassword()" class="btn-primary btn-small">Update Password</button>
+                </div>
+                <div id="profileMessage" class="message"></div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
         <div id="dashboardSection" class="dashboard-section" style="display: none;">
             <div class="dashboard-header glass-card">
-                <div class="logo-small"><i class="fas fa-cloud-upload-alt"></i><h2>Pocket Drive</h2></div>
+                <div class="logo-small">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h2>Pocket Drive</h2>
+                </div>
                 <div class="user-info">
-                    <span><i class="fas fa-user-circle"></i> <span id="userEmail"></span></span>
-                    <button onclick="showTrashView()" class="icon-btn"><i class="fas fa-trash-alt"></i></button>
+                    <div class="profile-trigger" onclick="openProfileModal()">
+                        <img id="profileAvatar" src="/uploads/default-avatar.png" alt="Profile" class="profile-avatar-small">
+                        <span id="userName">User</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <button onclick="showTrashView()" class="icon-btn" title="Trash"><i class="fas fa-trash-alt"></i></button>
                     <button onclick="changePasswordDialog()" class="icon-btn"><i class="fas fa-key"></i></button>
                     <button onclick="logout()" class="icon-btn"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </div>
+
             <div class="dashboard-content">
                 <div class="upload-area glass-card" onclick="document.getElementById('fileInput').click()">
-                    <i class="fas fa-cloud-upload-alt"></i><p>Click to upload files</p><small>Max 100MB</small>
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Click to upload files</p>
+                    <small>Any file type (Max 100MB)</small>
                     <input type="file" id="fileInput" style="display: none" onchange="uploadFile(this)">
                 </div>
-                <div id="uploadProgressContainer" class="progress-container" style="display: none;"><div class="progress-bar-wrapper"><div id="uploadProgressBar" class="progress-bar"></div></div><p id="uploadProgressPercent">0%</p></div>
-                <div class="view-controls"><button class="view-btn active" onclick="setView('grid')"><i class="fas fa-th-large"></i> Grid</button><button class="view-btn" onclick="setView('list')"><i class="fas fa-list"></i> List</button><button onclick="loadFiles()" class="view-btn"><i class="fas fa-sync-alt"></i> Refresh</button></div>
+
+                <div id="uploadProgressContainer" class="progress-container" style="display: none;">
+                    <div class="progress-bar-wrapper">
+                        <div id="uploadProgressBar" class="progress-bar"></div>
+                    </div>
+                    <p id="uploadProgressPercent">0%</p>
+                </div>
+
+                <div class="view-controls">
+                    <button class="view-btn active" onclick="setView('grid')"><i class="fas fa-th-large"></i> Grid</button>
+                    <button class="view-btn" onclick="setView('list')"><i class="fas fa-list"></i> List</button>
+                    <button onclick="loadFiles()" class="view-btn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+
                 <div id="fileList" class="file-container grid-view"></div>
+            </div>
+        </div>
+
+        <!-- Trash Modal -->
+        <div id="trashModal" class="modal">
+            <div class="modal-content glass-card trash-modal">
+                <span class="close" onclick="closeTrashModal()">&times;</span>
+                <h3><i class="fas fa-trash-alt"></i> Trash</h3>
+                <div id="trashList" class="trash-container"></div>
+                <div style="margin-top: 15px; text-align: center;">
+                    <button onclick="closeTrashModal()" class="btn-primary btn-small">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Modal -->
+        <div id="previewModal" class="modal">
+            <div class="modal-content glass-card preview-modal">
+                <span class="close" onclick="closePreviewModal()">&times;</span>
+                <h3 id="previewFileName">File Preview</h3>
+                <div id="previewContent" class="preview-content"></div>
             </div>
         </div>
     </div>
