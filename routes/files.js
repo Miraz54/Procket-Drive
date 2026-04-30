@@ -70,7 +70,7 @@ router.delete('/permanent/:id', requireAuth, async (req, res) => {
     res.json({ success: true });
 });
 
-// Preview (inline)
+// Preview
 router.get('/preview/:id', requireAuth, async (req, res) => {
     const { data: file, error } = await supabase.from('files').select('file_path, mime_type').eq('id', req.params.id).eq('user_id', req.session.userId).eq('is_deleted', 0).single();
     if (error || !file) return res.status(404).json({ error: 'File not found' });
@@ -82,7 +82,7 @@ router.get('/preview/:id', requireAuth, async (req, res) => {
     res.send(Buffer.from(await data.arrayBuffer()));
 });
 
-// Download (force download)
+// Download (force)
 router.get('/download/:id', requireAuth, async (req, res) => {
     const { data: file, error } = await supabase.from('files').select('file_path, original_name, mime_type').eq('id', req.params.id).eq('user_id', req.session.userId).eq('is_deleted', 0).single();
     if (error || !file) return res.status(404).json({ error: 'File not found' });
@@ -91,7 +91,6 @@ router.get('/download/:id', requireAuth, async (req, res) => {
     if (downloadError) return res.status(500).json({ error: 'Download failed' });
     res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.original_name)}"`);
-    res.setHeader('Content-Length', data.size);
     res.send(Buffer.from(await data.arrayBuffer()));
 });
 
