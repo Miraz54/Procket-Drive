@@ -6,7 +6,8 @@ async function checkAuth() {
         const res = await fetch('/api/auth/me');
         if (res.ok) {
             const user = await res.json();
-            document.getElementById('userEmail').textContent = user.email;
+            const userEmailSpan = document.getElementById('userEmail');
+            if (userEmailSpan) userEmailSpan.textContent = user.email;
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('dashboardSection').style.display = 'block';
             loadFiles();
@@ -79,7 +80,7 @@ async function login(e) {
         });
         const data = await res.json();
         if (res.ok) {
-            document.getElementById('userEmail').textContent = email;
+            if (document.getElementById('userEmail')) document.getElementById('userEmail').textContent = email;
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('dashboardSection').style.display = 'block';
             loadFiles();
