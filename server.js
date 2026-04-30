@@ -7,10 +7,10 @@ const fileRoutes = require('./routes/files');
 
 const app = express();
 
-// আপনার Vercel URL (এনভায়রনমেন্ট ভেরিয়েবল থেকে নেবে)
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://project-7bkdo.vercel.app';
+// Allowed origin (your Render app URL)
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://your-app.onrender.com';
 
-// CORS middleware (Vercel serverless functions এর জন্য)
+// CORS
 app.use((req, res, next) => {
     if (req.method === 'OPTIONS') {
         res.header('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
@@ -29,13 +29,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'fallback-secret-change-this',
+    secret: process.env.SESSION_SECRET || 'fallback-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: true,      // Vercel HTTPS uses secure cookies
+        secure: false,   // set to true if using HTTPS
         httpOnly: true,
-        sameSite: 'none',
+        sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000
     }
 }));
@@ -46,5 +46,3 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-
-module.exports = app;
