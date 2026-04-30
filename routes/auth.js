@@ -6,7 +6,6 @@ const router = express.Router();
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
-// Helper for protected routes
 function requireAuth(req, res, next) {
     if (!req.session.userId) return res.status(401).json({ error: 'Unauthorized' });
     next();
