@@ -8,18 +8,14 @@ const fileRoutes = require('./routes/files');
 const app = express();
 app.set('trust proxy', 1);
 
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://procket-drive.onrender.com';
-
+// CORS (allow your frontend domain)
 app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-        res.header('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
-        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
-        res.header('Access-Control-Allow-Credentials', 'true');
-        return res.status(200).json({});
-    }
-    res.header('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+    const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://procket-drive.onrender.com';
+    res.header('Access-Control-Allow-Origin', allowedOrigin);
     res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Cookie');
+    if (req.method === 'OPTIONS') return res.sendStatus(200);
     next();
 });
 
@@ -28,13 +24,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'fallback-secret',
+    secret: process.env.SESSION_SECRET || 'fallback-secret-change-this',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: true,
+        secure: true,       // required for HTTPS (Render)
         httpOnly: true,
-        sameSite: 'none',
+        sameSite: 'none',   // required for cross-site requests
         maxAge: 24 * 60 * 60 * 1000
     }
 }));
@@ -44,4 +40,4 @@ app.use('/api/files', fileRoutes);
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
