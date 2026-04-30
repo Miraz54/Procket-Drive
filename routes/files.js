@@ -8,7 +8,10 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Use memory storage (no disk writing)
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 500 * 1024 * 1024 } }); // → এটি সঠিক
+const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 100 * 1024 * 1024 }
+});
 
 function requireAuth(req, res, next) {
     if (!req.session.userId) return res.status(401).json({ error: 'Authentication required' });
