@@ -16,7 +16,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: true,      // Vercel uses HTTPS
+        secure: true,      // HTTPS only
         httpOnly: true,
         sameSite: 'none',
         maxAge: 24 * 60 * 60 * 1000
