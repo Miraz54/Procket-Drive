@@ -17,7 +17,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: true,      // Vercel uses HTTPS
+        secure: true,
         httpOnly: true,
         sameSite: 'none',
         maxAge: 24 * 60 * 60 * 1000
@@ -28,5 +28,4 @@ app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-// Vercel requires export of the app
 module.exports = app;

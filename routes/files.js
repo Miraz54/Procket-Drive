@@ -1,8 +1,7 @@
 const express = require('express');
-const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
-const router = express.Router();
 
+const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 function requireAuth(req, res, next) {
@@ -10,7 +9,7 @@ function requireAuth(req, res, next) {
     next();
 }
 
-// 1. Get signed upload URL (client uploads directly to Supabase)
+// Get signed upload URL (for client‑side upload)
 router.get('/upload-url', requireAuth, async (req, res) => {
     const userId = req.session.userId;
     const fileName = req.query.name;
@@ -28,9 +27,9 @@ router.get('/upload-url', requireAuth, async (req, res) => {
     res.json({ signedUrl: data.signedUrl, filePath, publicUrl });
 });
 
-// 2. Register uploaded file metadata
+// Register file metadata after successful upload
 router.post('/register', requireAuth, async (req, res) => {
-    const { name, size, type, publicUrl, filePath } = req.body;
+    const { name, size, type, publicUrl } = req.body;
     if (!name || !size || !publicUrl) {
         return res.status(400).json({ error: 'Missing fields' });
     }
@@ -49,7 +48,7 @@ router.post('/register', requireAuth, async (req, res) => {
     res.json({ success: true, file: data[0] });
 });
 
-// List active files (unchanged)
+// List active files (not deleted)
 router.get('/list', requireAuth, async (req, res) => {
     const { data, error } = await supabase
         .from('files')
@@ -67,7 +66,7 @@ router.get('/list', requireAuth, async (req, res) => {
     })));
 });
 
-// Trash list (unchanged)
+// Trash list (deleted files)
 router.get('/trash', requireAuth, async (req, res) => {
     const { data, error } = await supabase
         .from('files')
@@ -96,7 +95,7 @@ router.delete('/delete/:id', requireAuth, async (req, res) => {
     res.json({ success: true });
 });
 
-// Restore
+// Restore from trash
 router.post('/restore/:id', requireAuth, async (req, res) => {
     const { error } = await supabase
         .from('files')
@@ -107,7 +106,7 @@ router.post('/restore/:id', requireAuth, async (req, res) => {
     res.json({ success: true });
 });
 
-// Permanent delete
+// Permanently delete (remove from storage and DB)
 router.delete('/permanent/:id', requireAuth, async (req, res) => {
     const { data: file, error: fetchError } = await supabase
         .from('files')
@@ -123,7 +122,7 @@ router.delete('/permanent/:id', requireAuth, async (req, res) => {
     res.json({ success: true });
 });
 
-// Preview (inline)
+// Preview (inline display)
 router.get('/preview/:id', requireAuth, async (req, res) => {
     const { data: file, error } = await supabase
         .from('files')
