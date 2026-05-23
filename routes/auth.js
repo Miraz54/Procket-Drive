@@ -2,8 +2,8 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
-const router = express.Router();
 
+const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 function requireAuth(req, res, next) {
@@ -11,7 +11,6 @@ function requireAuth(req, res, next) {
     next();
 }
 
-// Register
 router.post('/register', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -28,7 +27,6 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// Login
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -46,39 +44,34 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Get current user
 router.get('/me', (req, res) => {
     if (!req.session.userId) return res.status(401).json({ error: 'Not authenticated' });
     res.json({ id: req.session.userId, email: req.session.userEmail });
 });
 
-// Logout
 router.post('/logout', (req, res) => {
     req.session.destroy();
     res.json({ success: true });
 });
 
-// Change password (while logged in)
 router.post('/change-password', requireAuth, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
-    if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: 'New password too short' });
+    if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: 'Too short' });
     const { data: users } = await supabase.from('users').select('password').eq('id', req.session.userId);
     if (!users?.length) return res.status(404).json({ error: 'User not found' });
     const match = await bcrypt.compare(currentPassword, users[0].password);
-    if (!match) return res.status(401).json({ error: 'Current password wrong' });
+    if (!match) return res.status(401).json({ error: 'Wrong current password' });
     const hash = await bcrypt.hash(newPassword, 10);
     await supabase.from('users').update({ password: hash }).eq('id', req.session.userId);
     res.json({ success: true });
 });
 
-// Get profile
 router.get('/profile', requireAuth, async (req, res) => {
     const { data, error } = await supabase.from('users').select('id, email, name, profile_picture').eq('id', req.session.userId).single();
     if (error) return res.status(500).json({ error: 'DB error' });
     res.json(data);
 });
 
-// Update name
 router.put('/profile/name', requireAuth, async (req, res) => {
     const { name } = req.body;
     if (!name || name.trim() === '') return res.status(400).json({ error: 'Name required' });
@@ -86,7 +79,6 @@ router.put('/profile/name', requireAuth, async (req, res) => {
     res.json({ success: true });
 });
 
-// Profile picture upload
 const upload = multer({ storage: multer.memoryStorage() });
 router.post('/profile/picture', requireAuth, upload.single('profile_pic'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file' });

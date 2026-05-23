@@ -202,19 +202,6 @@ body {
     cursor: pointer;
     margin-top: 5px;
 }
-.forgot-link {
-    display: block;
-    text-align: center;
-    margin-top: 16px;
-    color: #a0d9ff;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 500;
-    transition: color var(--transition-duration) ease;
-}
-.forgot-link:hover {
-    color: var(--accent-color);
-}
 .message {
     margin-top: 20px;
     padding: 10px;
