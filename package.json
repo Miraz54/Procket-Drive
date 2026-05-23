@@ -1,11 +1,10 @@
 {
   "name": "pocket-drive",
   "version": "1.0.0",
-  "description": "Cloud storage with Supabase",
+  "description": "Cloud storage on Vercel + Supabase",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.js"
   },
   "engines": {
     "node": ">=18.0.0"
