@@ -9,112 +9,59 @@ function requireAuth(req, res, next) {
     next();
 }
 
-// Get signed upload URL (for client‑side upload)
 router.get('/upload-url', requireAuth, async (req, res) => {
     const userId = req.session.userId;
     const fileName = req.query.name;
     if (!fileName) return res.status(400).json({ error: 'File name required' });
-
     const safeName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     const filePath = `${userId}/${safeName}`;
-
-    const { data, error } = await supabase.storage
-        .from('userfiles')
-        .createSignedUploadUrl(filePath);
-
+    const { data, error } = await supabase.storage.from('userfiles').createSignedUploadUrl(filePath);
     if (error) return res.status(500).json({ error: error.message });
     const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/userfiles/${filePath}`;
     res.json({ signedUrl: data.signedUrl, filePath, publicUrl });
 });
 
-// Register file metadata after successful upload
 router.post('/register', requireAuth, async (req, res) => {
     const { name, size, type, publicUrl } = req.body;
-    if (!name || !size || !publicUrl) {
-        return res.status(400).json({ error: 'Missing fields' });
-    }
-    const { data, error } = await supabase
-        .from('files')
-        .insert([{
-            user_id: req.session.userId,
-            original_name: name,
-            file_path: publicUrl,
-            file_size: size,
-            mime_type: type,
-            is_deleted: 0
-        }])
-        .select();
+    if (!name || !size || !publicUrl) return res.status(400).json({ error: 'Missing fields' });
+    const { data, error } = await supabase.from('files').insert([{
+        user_id: req.session.userId,
+        original_name: name,
+        file_path: publicUrl,
+        file_size: size,
+        mime_type: type,
+        is_deleted: 0
+    }]).select();
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true, file: data[0] });
 });
 
-// List active files (not deleted)
 router.get('/list', requireAuth, async (req, res) => {
-    const { data, error } = await supabase
-        .from('files')
-        .select('*')
-        .eq('user_id', req.session.userId)
-        .eq('is_deleted', 0)
-        .order('uploaded_at', { ascending: false });
+    const { data, error } = await supabase.from('files').select('*').eq('user_id', req.session.userId).eq('is_deleted', 0).order('uploaded_at', { ascending: false });
     if (error) return res.status(500).json({ error: 'Failed' });
-    res.json(data.map(f => ({
-        id: f.id,
-        name: f.original_name,
-        size: f.file_size,
-        type: f.mime_type,
-        uploaded_at: f.uploaded_at
-    })));
+    res.json(data.map(f => ({ id: f.id, name: f.original_name, size: f.file_size, type: f.mime_type, uploaded_at: f.uploaded_at })));
 });
 
-// Trash list (deleted files)
 router.get('/trash', requireAuth, async (req, res) => {
-    const { data, error } = await supabase
-        .from('files')
-        .select('*')
-        .eq('user_id', req.session.userId)
-        .eq('is_deleted', 1)
-        .order('deleted_at', { ascending: false });
+    const { data, error } = await supabase.from('files').select('*').eq('user_id', req.session.userId).eq('is_deleted', 1).order('deleted_at', { ascending: false });
     if (error) return res.status(500).json({ error: 'Failed' });
-    res.json(data.map(f => ({
-        id: f.id,
-        name: f.original_name,
-        size: f.file_size,
-        type: f.mime_type,
-        deleted_at: f.deleted_at
-    })));
+    res.json(data.map(f => ({ id: f.id, name: f.original_name, size: f.file_size, type: f.mime_type, deleted_at: f.deleted_at })));
 });
 
-// Soft delete (move to trash)
 router.delete('/delete/:id', requireAuth, async (req, res) => {
-    const { error } = await supabase
-        .from('files')
-        .update({ is_deleted: 1, deleted_at: new Date().toISOString() })
-        .eq('id', req.params.id)
-        .eq('user_id', req.session.userId);
+    const { error } = await supabase.from('files').update({ is_deleted: 1, deleted_at: new Date().toISOString() }).eq('id', req.params.id).eq('user_id', req.session.userId);
     if (error) return res.status(500).json({ error: 'Move failed' });
     res.json({ success: true });
 });
 
-// Restore from trash
 router.post('/restore/:id', requireAuth, async (req, res) => {
-    const { error } = await supabase
-        .from('files')
-        .update({ is_deleted: 0, deleted_at: null })
-        .eq('id', req.params.id)
-        .eq('user_id', req.session.userId);
+    const { error } = await supabase.from('files').update({ is_deleted: 0, deleted_at: null }).eq('id', req.params.id).eq('user_id', req.session.userId);
     if (error) return res.status(500).json({ error: 'Restore failed' });
     res.json({ success: true });
 });
 
-// Permanently delete (remove from storage and DB)
 router.delete('/permanent/:id', requireAuth, async (req, res) => {
-    const { data: file, error: fetchError } = await supabase
-        .from('files')
-        .select('file_path')
-        .eq('id', req.params.id)
-        .eq('user_id', req.session.userId)
-        .eq('is_deleted', 1)
-        .single();
+    const { data: file, error: fetchError } = await supabase.from('files').select('file_path').eq('id', req.params.id).eq('user_id', req.session.userId).eq('is_deleted', 1).single();
     if (fetchError || !file) return res.status(404).json({ error: 'Not found in trash' });
     const storagePath = file.file_path.split('/').slice(file.file_path.split('/').indexOf('userfiles') + 1).join('/');
     await supabase.storage.from('userfiles').remove([storagePath]);
@@ -122,15 +69,8 @@ router.delete('/permanent/:id', requireAuth, async (req, res) => {
     res.json({ success: true });
 });
 
-// Preview (inline display)
 router.get('/preview/:id', requireAuth, async (req, res) => {
-    const { data: file, error } = await supabase
-        .from('files')
-        .select('file_path, mime_type')
-        .eq('id', req.params.id)
-        .eq('user_id', req.session.userId)
-        .eq('is_deleted', 0)
-        .single();
+    const { data: file, error } = await supabase.from('files').select('file_path, mime_type').eq('id', req.params.id).eq('user_id', req.session.userId).eq('is_deleted', 0).single();
     if (error || !file) return res.status(404).json({ error: 'File not found' });
     const storagePath = file.file_path.split('/').slice(file.file_path.split('/').indexOf('userfiles') + 1).join('/');
     const { data, error: downloadError } = await supabase.storage.from('userfiles').download(storagePath);
@@ -140,15 +80,8 @@ router.get('/preview/:id', requireAuth, async (req, res) => {
     res.send(Buffer.from(await data.arrayBuffer()));
 });
 
-// Download (force attachment)
 router.get('/download/:id', requireAuth, async (req, res) => {
-    const { data: file, error } = await supabase
-        .from('files')
-        .select('file_path, original_name, mime_type')
-        .eq('id', req.params.id)
-        .eq('user_id', req.session.userId)
-        .eq('is_deleted', 0)
-        .single();
+    const { data: file, error } = await supabase.from('files').select('file_path, original_name, mime_type').eq('id', req.params.id).eq('user_id', req.session.userId).eq('is_deleted', 0).single();
     if (error || !file) return res.status(404).json({ error: 'File not found' });
     const storagePath = file.file_path.split('/').slice(file.file_path.split('/').indexOf('userfiles') + 1).join('/');
     const { data, error: downloadError } = await supabase.storage.from('userfiles').download(storagePath);

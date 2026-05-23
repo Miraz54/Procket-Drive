@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
@@ -17,7 +16,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: true,
+        secure: true,      // Vercel uses HTTPS
         httpOnly: true,
         sameSite: 'none',
         maxAge: 24 * 60 * 60 * 1000
